@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import logoImg from '../assets/logo.png'
 
 export default function LoginPage({ onClose }) {
   const { login, API } = useAuth()
   const [tab, setTab] = useState('login')
-  const [form, setForm] = useState({ name: '', email: '', password: '' })
+  const [form, setForm] = useState({ name: '', nickname: '', email: '', password: '' })
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError]     = useState('')
   const [success, setSuccess] = useState('')
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
@@ -14,19 +15,32 @@ export default function LoginPage({ onClose }) {
   async function handleSubmit(e) {
     e.preventDefault()
     setError(''); setSuccess(''); setLoading(true)
+
     const endpoint = tab === 'login' ? `${API}/login` : `${API}/register`
     const body = tab === 'login'
       ? { email: form.email, password: form.password }
-      : { name: form.name, email: form.email, password: form.password }
+      : { name: form.name, nickname: form.nickname, email: form.email, password: form.password }
 
     try {
-      const res = await fetch(endpoint, {
+      const res  = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.message || 'Error al procesar la solicitud'); setLoading(false); return }
+
+      if (!res.ok) {
+        // Laravel validation errors come as data.errors object
+        if (data.errors) {
+          const msgs = Object.values(data.errors).flat().join(' · ')
+          setError(msgs)
+        } else {
+          setError(data.message || 'Error al procesar la solicitud')
+        }
+        setLoading(false)
+        return
+      }
+
       if (tab === 'register') {
         setSuccess('¡Cuenta creada! Ahora inicia sesión.')
         setTab('login')
@@ -34,7 +48,10 @@ export default function LoginPage({ onClose }) {
         setLoading(false)
         return
       }
+
       login(data)
+      onClose()
+
     } catch {
       setError('No se pudo conectar con el servidor')
     }
@@ -47,41 +64,66 @@ export default function LoginPage({ onClose }) {
 
         <button className="close-btn" onClick={onClose} aria-label="Cerrar">✕</button>
 
-        <div className="login-brand">⬡</div>
+        {/* Brand */}
+        <div className="login-brand">
+          <img src={logoImg} alt="Logo ZasBoard" />
+          <span className="login-brand-text">ZasBoard</span>
+        </div>
+
         <h2 className="login-title">
           {tab === 'login' ? 'Bienvenido de nuevo' : 'Únete al club'}
         </h2>
         <p className="login-subtitle">
           {tab === 'login'
-            ? 'Accede para ver sesiones, partidas y más'
+            ? 'Accede para ver sesiones, partidas y mucho más'
             : 'Crea tu cuenta y empieza a jugar'}
         </p>
 
+        {/* Tabs */}
         <div className="tab-row">
           <button
             className={`tab-btn ${tab === 'login' ? 'tab-active' : 'tab-inactive'}`}
-            onClick={() => setTab('login')}
-          >Iniciar sesión</button>
+            onClick={() => { setTab('login'); setError(''); setSuccess('') }}
+          >
+            Iniciar sesión
+          </button>
           <button
             className={`tab-btn ${tab === 'register' ? 'tab-active' : 'tab-inactive'}`}
-            onClick={() => setTab('register')}
-          >Registrarse</button>
+            onClick={() => { setTab('register'); setError(''); setSuccess('') }}
+          >
+            Registrarse
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
+
           {tab === 'register' && (
-            <div className="field">
-              <label className="field-label">Nombre completo</label>
-              <input
-                className="field-input"
-                type="text"
-                placeholder="María García"
-                value={form.name}
-                onChange={e => set('name', e.target.value)}
-                required
-              />
-            </div>
+            <>
+              <div className="field">
+                <label className="field-label">Nombre completo</label>
+                <input
+                  className="field-input"
+                  type="text"
+                  placeholder="María García"
+                  value={form.name}
+                  onChange={e => set('name', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label className="field-label">Nickname</label>
+                <input
+                  className="field-input"
+                  type="text"
+                  placeholder="meeple_queen"
+                  value={form.nickname}
+                  onChange={e => set('nickname', e.target.value)}
+                  required
+                />
+              </div>
+            </>
           )}
+
           <div className="field">
             <label className="field-label">Email</label>
             <input
@@ -93,6 +135,7 @@ export default function LoginPage({ onClose }) {
               required
             />
           </div>
+
           <div className="field">
             <label className="field-label">Contraseña</label>
             <input
@@ -105,15 +148,22 @@ export default function LoginPage({ onClose }) {
             />
           </div>
 
-          {error && <p className="msg msg-error">{error}</p>}
+          {error   && <p className="msg msg-error">{error}</p>}
           {success && <p className="msg msg-success">{success}</p>}
 
-          <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-            {loading ? <span className="spinner-inline" /> : null}
-            {loading ? 'Procesando...' : tab === 'login' ? 'Entrar al club' : 'Crear cuenta'}
+          <button
+            type="submit"
+            className="btn btn-primary btn-full"
+            disabled={loading}
+            style={{ marginTop: '0.25rem' }}
+          >
+            {loading && <span className="spinner-inline" />}
+            {loading
+              ? 'Procesando...'
+              : tab === 'login' ? 'Entrar al club' : 'Crear cuenta'}
           </button>
-        </form>
 
+        </form>
       </div>
     </div>
   )

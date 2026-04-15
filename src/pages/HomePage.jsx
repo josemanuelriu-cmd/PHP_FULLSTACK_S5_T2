@@ -1,45 +1,45 @@
-console.log("HomePage renderizando");
-
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import SessionCard from '../components/SessionCard'
 import AttendeesList from '../components/AttendeesList'
 import GamesList from '../components/GamesList'
+import logoImg from '../assets/logo.png'
 
-if (!useAuth) {
-  console.log("useAuth no existe");
-}
+export default function HomePage({ onLoginClick }) {
+  const { token, authHeaders, API } = useAuth()
 
-export default function HomePage() {
-  const { token, authHeaders, API, setShowLogin } = useAuth()
-  const [session, setSession] = useState(null)
+  const [session,      setSession]      = useState(null)
   const [sessionUsers, setSessionUsers] = useState([])
   const [sessionGames, setSessionGames] = useState([])
   const [loadingSession, setLoadingSession] = useState(false)
-  const [loadingUsers, setLoadingUsers] = useState(false)
-  const [loadingGames, setLoadingGames] = useState(false)
-  const [error, setError] = useState('')
+  const [loadingUsers,   setLoadingUsers]   = useState(false)
+  const [loadingGames,   setLoadingGames]   = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
 
   async function loadNextSession() {
-    setLoadingSession(true); setError('')
+    setLoadingSession(true); setErrorMsg('')
     try {
       const res = await fetch(`${API}/zassessions`, { headers: authHeaders })
-      if (!res.ok) throw new Error('Error al cargar sesiones')
+      if (!res.ok) throw new Error('No se pudieron cargar las sesiones')
       const data = await res.json()
-      const sessions = Array.isArray(data) ? data : (data.data || [])
+      const list = Array.isArray(data) ? data : (data.data || [])
+
+      // Find the next upcoming session by date field
       const now = new Date()
-      const getDate = s => new Date(s.date || s.starts_at || s.start_date || s.scheduled_at || 0)
-      const upcoming = sessions
-        .filter(s => getDate(s) >= now)
-        .sort((a, b) => getDate(a) - getDate(b))
-      const next = upcoming[0] || sessions[sessions.length - 1] || null
+      now.setHours(0, 0, 0, 0)
+      const upcoming = list
+        .filter(s => s.date && new Date(s.date) >= now)
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+
+      const next = upcoming[0] || list[list.length - 1] || null
       setSession(next)
+
       if (next) {
         loadSessionUsers(next.id)
         loadSessionGames(next.id)
       }
     } catch (e) {
-      setError(e.message)
+      setErrorMsg(e.message)
       setSession(null)
     }
     setLoadingSession(false)
@@ -51,8 +51,8 @@ export default function HomePage() {
       const res = await fetch(`${API}/zassessions/${id}/users`, { headers: authHeaders })
       if (!res.ok) throw new Error()
       const data = await res.json()
-      const users = Array.isArray(data) ? data : (data.data || [])
-      setSessionUsers(users.slice(0, 15))
+      const list = Array.isArray(data) ? data : (data.data || [])
+      setSessionUsers(list.slice(0, 15))
     } catch {
       setSessionUsers([])
     }
@@ -65,22 +65,18 @@ export default function HomePage() {
       const res = await fetch(`${API}/zassessions/${id}/games`, { headers: authHeaders })
       if (!res.ok) throw new Error()
       const data = await res.json()
-      const games = Array.isArray(data) ? data : (data.data || [])
-      setSessionGames(games)
+      const list = Array.isArray(data) ? data : (data.data || [])
+      setSessionGames(list)
     } catch {
       setSessionGames([])
     }
     setLoadingGames(false)
   }
 
-  /*
   useEffect(() => {
     if (token) loadNextSession()
   }, [token])
-  */
-  useEffect(() => {
-    loadNextSession()
-  }, [])
+
   return (
     <main className="main-layout">
 
@@ -88,17 +84,17 @@ export default function HomePage() {
       <section className="hero">
         <div className="hero-content">
           <div className="hero-eyebrow">
-            <span className="eyebrow-dot" />
-            Club de juegos de mesa · Barcelona
+            <span className="eyebrow-line" />
+            Club de Juegos de Mesa
           </div>
           <h1 className="hero-title">
-            Donde las mejores<br />
-            <em>partidas</em> te esperan
+            Donde cada partida<br />
+            es una <em>aventura</em>
           </h1>
           <p className="hero-body">
             Somos una comunidad apasionada por los juegos de mesa. Nos reunimos
-            periódicamente para jugar, aprender nuevos juegos y crear recuerdos
-            inolvidables alrededor de una mesa.
+            periódicamente para jugar, descubrir nuevos títulos y crear partidas
+            inolvidables. ¿Te unes?
           </p>
           <div className="hero-cta">
             {token ? (
@@ -107,32 +103,33 @@ export default function HomePage() {
               </button>
             ) : (
               <>
-                <button className="btn btn-primary" onClick={() => setShowLogin(true)}>
+                <button className="btn btn-primary" onClick={onLoginClick}>
                   Unirse al club →
                 </button>
-                <button className="btn btn-ghost" onClick={() => setShowLogin(true)}>
+                <button className="btn btn-ghost" onClick={onLoginClick}>
                   Ya tengo cuenta
                 </button>
               </>
             )}
           </div>
         </div>
-        <div className="hero-visual" aria-hidden="true">
-          <div className="hex-grid">
-            {['♟','⬡','🎲','♜','⬡','🃏','⬡','♞','⬡'].map((s, i) => (
-              <div key={i} className="hex-cell" style={{ '--i': i }}>{s}</div>
-            ))}
+
+        {/* Logo panel */}
+        <div className="hero-logo-panel">
+          <div className="hero-logo-wrap">
+            <img src={logoImg} alt="Logo del club" />
           </div>
+          <p className="hero-club-tagline">Juego · Estrategia · Comunidad</p>
         </div>
       </section>
 
       {/* ── STATS STRIP ── */}
       <div className="stats-strip">
         {[
-          { label: 'Socios activos', value: '47' },
-          { label: 'Juegos en catálogo', value: '120+' },
-          { label: 'Sesiones celebradas', value: '38' },
-          { label: 'Partidas jugadas', value: '500+' },
+          { label: 'Socios activos',      value: '47'   },
+          { label: 'Juegos en catálogo',  value: '120+' },
+          { label: 'Sesiones celebradas', value: '38'   },
+          { label: 'Partidas jugadas',    value: '500+' },
         ].map(s => (
           <div key={s.label} className="stat-item">
             <span className="stat-value">{s.value}</span>
@@ -141,39 +138,38 @@ export default function HomePage() {
         ))}
       </div>
 
-      {/* ── CONTENT AREA ── */}
+      {/* ── CONTENT ── */}
       <div className="content-area">
         {!token ? (
           <div className="locked-state">
-            <div className="lock-icon">⬡</div>
+            <div className="lock-icon">🔒</div>
             <h3>Contenido exclusivo para miembros</h3>
-            <p>Inicia sesión para ver la próxima sesión, los asistentes confirmados y las partidas programadas.</p>
-            <button className="btn btn-primary" onClick={() => setShowLogin(true)}>
+            <p>
+              Inicia sesión para ver la próxima sesión, los asistentes confirmados
+              y las partidas programadas.
+            </p>
+            <button className="btn btn-primary" onClick={onLoginClick}>
               Acceder al club
             </button>
           </div>
         ) : (
           <div className="sections-grid">
-
             <SessionCard
               session={session}
               loading={loadingSession}
               userCount={sessionUsers.length}
-              error={error}
+              error={errorMsg}
             />
-
             <AttendeesList
               users={sessionUsers}
               loading={loadingUsers}
               session={session}
             />
-
             <GamesList
               games={sessionGames}
               loading={loadingGames}
               session={session}
             />
-
           </div>
         )}
       </div>
