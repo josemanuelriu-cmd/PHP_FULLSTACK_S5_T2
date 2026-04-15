@@ -28,7 +28,7 @@ export default function LoginPage({ onClose }) {
         body: JSON.stringify(body),
       })
       const data = await res.json()
-
+//console.log("TOKEN LOGIN:", data.access_token)
       if (!res.ok) {
         // Laravel validation errors come as data.errors object
         if (data.errors) {

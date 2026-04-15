@@ -5,9 +5,11 @@ import AttendeesList from '../components/AttendeesList'
 import GamesList from '../components/GamesList'
 import logoImg from '../assets/logo.png'
 
+
+
 export default function HomePage({ onLoginClick }) {
   const { token, authHeaders, API } = useAuth()
-
+//console.log("TOKEN HOMEPAGE:", token)
   const [session,      setSession]      = useState(null)
   const [sessionUsers, setSessionUsers] = useState([])
   const [sessionGames, setSessionGames] = useState([])
@@ -19,6 +21,7 @@ export default function HomePage({ onLoginClick }) {
   async function loadNextSession() {
     setLoadingSession(true); setErrorMsg('')
     try {
+//console.log("HEADERS ENVIADOS:", authHeaders)      
       const res = await fetch(`${API}/zassessions`, { headers: authHeaders })
       if (!res.ok) throw new Error('No se pudieron cargar las sesiones')
       const data = await res.json()

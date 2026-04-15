@@ -98,8 +98,9 @@ h1, h2, h3 { font-family: 'Cinzel', serif; line-height: 1.1; }
   backdrop-filter: blur(18px);
 }
 .navbar-inner {
-  max-width: 1120px; margin: 0 auto; padding: 0 2rem;
+  max-width: 1280px; margin: 0 auto; padding: 0 1.5rem;
   height: 64px; display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem;
 }
 .navbar-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 .navbar-logo img {
@@ -123,6 +124,57 @@ h1, h2, h3 { font-family: 'Cinzel', serif; line-height: 1.1; }
 }
 .user-avatar-sm::before { content: attr(data-initials); }
 .user-display-name { font-size: 0.85rem; font-weight: 500; }
+
+/* ── NAV LINKS (desktop) ─────────────────────────── */
+.nav-links {
+  display: flex; align-items: center; gap: 0;
+  list-style: none; margin: 0; padding: 0;
+  flex: 1; justify-content: center;
+}
+.nav-link {
+  display: block; padding: 0.45rem 0.75rem;
+  font-size: 0.82rem; font-weight: 500; color: var(--text-muted);
+  text-decoration: none; border-radius: var(--radius-xs);
+  transition: color 0.15s, background 0.15s; white-space: nowrap; letter-spacing: 0.2px;
+}
+.nav-link:hover { color: var(--text); background: var(--surface2); }
+.nav-link.active { color: var(--primary); background: var(--primary-pale); }
+
+/* ── HAMBURGER (mobile) ──────────────────────────── */
+.hamburger {
+  display: none; flex-direction: column; justify-content: center;
+  align-items: center; gap: 5px; width: 36px; height: 36px;
+  background: none; border: none; cursor: pointer; padding: 0;
+}
+.ham-bar { width: 20px; height: 1.5px; background: var(--text-muted); border-radius: 2px; display: block; }
+
+/* ── MOBILE DROPDOWN ─────────────────────────────── */
+.nav-mobile-menu {
+  flex-direction: column; border-top: 0.5px solid var(--border3);
+  background: rgba(14,10,11,0.97); padding: 0.5rem 1.25rem 1rem;
+}
+.nav-mobile-link {
+  display: block; padding: 0.65rem 0.5rem;
+  font-size: 0.9rem; font-weight: 500; color: var(--text-muted);
+  text-decoration: none; border-bottom: 0.5px solid var(--border);
+  transition: color 0.15s; background: none;
+  border-left: none; border-right: none; border-top: none;
+  text-align: left; cursor: pointer; width: 100%;
+  font-family: 'Raleway', sans-serif; letter-spacing: 0.2px;
+}
+.nav-mobile-link:last-child { border-bottom: none; }
+.nav-mobile-link:hover { color: var(--text); }
+.nav-mobile-divider { height: 0.5px; background: var(--border3); margin: 0.5rem 0; }
+.nav-mobile-logout { color: var(--primary); }
+
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
+  .nav-mobile-menu { display: flex; }
+}
+@media (min-width: 901px) {
+  .nav-mobile-menu { display: none !important; }
+}
 
 /* ── HERO ────────────────────────────────────────── */
 .main-layout { min-height: calc(100vh - 64px); }
