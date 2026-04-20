@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import logoImg from '../assets/logo.png'
 
@@ -10,57 +11,47 @@ function initials(str) {
   return str.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 }
 
-// Placeholder click handler until pages are built
-function navLink(label, href = '#') {
-  return { label, href }
-}
-
 const AUTH_LINKS = [
-  navLink('Inicio',             '/'),
-  navLink('Juegos de mesa',     '/boardgames'),
-  navLink('Tipos',              '/types'),
-  navLink('Sesiones',           '/sessions'),
-  navLink('Perfil',             '/profile'),
-  navLink('Cambiar contraseña', '/change-password'),
+  { label: 'Inicio',         to: '/' },
+  { label: 'Juegos de mesa', to: '/boardgames' },
+  { label: 'Tipos',          to: '/types' },
+  { label: 'Sesiones',       to: '/sessions' },
+  { label: 'Perfil',         to: '/profile' },
 ]
 
 export default function Navbar({ onLoginClick }) {
   const { user, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
 
-  function handleNavClick(e, href) {
-    // Pages not built yet — prevent navigation, will be wired later
-    if (href !== '/') {
-      e.preventDefault()
-    }
-    setMenuOpen(false)
-  }
+  const linkClass = ({ isActive }) =>
+    isActive ? 'nav-link active' : 'nav-link'
 
   return (
     <nav className="navbar">
       <div className="navbar-inner">
 
         {/* ── LEFT: logo + title ── */}
-        <a href="/" className="navbar-logo" onClick={e => handleNavClick(e, '/')}>
+        <Link to="/" className="navbar-logo" onClick={() => setMenuOpen(false)}>
           <img src={logoImg} alt="ZAS! logo" />
           <div className="logo-text">
             <span className="logo-name">ZAS!</span>
             <span className="logo-sub">Juegos de mesa y rol</span>
           </div>
-        </a>
+        </Link>
 
-        {/* ── CENTER: nav links (logged in) ── */}
+        {/* ── CENTER: nav links (only when logged in) ── */}
         {user && (
           <ul className="nav-links">
-            {AUTH_LINKS.map(({ label, href }) => (
-              <li key={label}>
-                <a
-                  href={href}
-                  className="nav-link"
-                  onClick={e => handleNavClick(e, href)}
+            {AUTH_LINKS.map(({ label, to }) => (
+              <li key={to}>
+                <NavLink
+                  to={to}
+                  className={linkClass}
+                  end={to === '/'}
+                  onClick={() => setMenuOpen(false)}
                 >
                   {label}
-                </a>
+                </NavLink>
               </li>
             ))}
           </ul>
@@ -92,16 +83,16 @@ export default function Navbar({ onLoginClick }) {
             </button>
           )}
 
-          {/* Hamburger (mobile, only when logged in) */}
+          {/* Hamburger — mobile only, only when logged in */}
           {user && (
             <button
               className="hamburger"
               onClick={() => setMenuOpen(o => !o)}
-              aria-label="Menú"
+              aria-label="Abrir menú"
             >
-              <span className={`ham-bar ${menuOpen ? 'open' : ''}`} />
-              <span className={`ham-bar ${menuOpen ? 'open' : ''}`} />
-              <span className={`ham-bar ${menuOpen ? 'open' : ''}`} />
+              <span className="ham-bar" />
+              <span className="ham-bar" />
+              <span className="ham-bar" />
             </button>
           )}
         </div>
@@ -110,18 +101,24 @@ export default function Navbar({ onLoginClick }) {
       {/* ── MOBILE DROPDOWN ── */}
       {user && menuOpen && (
         <div className="nav-mobile-menu">
-          {AUTH_LINKS.map(({ label, href }) => (
-            <a
-              key={label}
-              href={href}
-              className="nav-mobile-link"
-              onClick={e => handleNavClick(e, href)}
+          {AUTH_LINKS.map(({ label, to }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === '/'}
+              className={({ isActive }) =>
+                isActive ? 'nav-mobile-link active' : 'nav-mobile-link'
+              }
+              onClick={() => setMenuOpen(false)}
             >
               {label}
-            </a>
+            </NavLink>
           ))}
           <div className="nav-mobile-divider" />
-          <button className="nav-mobile-link nav-mobile-logout" onClick={() => { logout(); setMenuOpen(false) }}>
+          <button
+            className="nav-mobile-link nav-mobile-logout"
+            onClick={() => { logout(); setMenuOpen(false) }}
+          >
             Salir
           </button>
         </div>
