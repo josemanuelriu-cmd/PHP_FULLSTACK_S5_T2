@@ -86,7 +86,14 @@ export default function BoardgameDetail() {
     </main>
   )
 
-  const types = game?.types?.map(t => t.type) || []
+  // Handle multiple API response formats for types
+  const types = (() => {
+    if (Array.isArray(game?.types) && game.types.length > 0)
+      return game.types.map(t => t.type || t).filter(Boolean)
+    if (Array.isArray(game?.boardgame_types) && game.boardgame_types.length > 0)
+      return game.boardgame_types.map(bt => bt.type?.type || bt.type).filter(Boolean)
+    return []
+  })()
   const owner = ownerLabel(game || {})
 
   return (

@@ -9,8 +9,21 @@ function ownerLabel(game) {
   return game.owner?.nickname || game.owner?.name || `Usuario #${game.owner_user_id}`
 }
 
+function extractTypes(game) {
+  // Handle different API response formats for types relation
+  if (Array.isArray(game.types) && game.types.length > 0) {
+    // [{ id, type, description }] — standard eager load
+    return game.types.map(t => t.type || t).filter(Boolean)
+  }
+  if (Array.isArray(game.boardgame_types) && game.boardgame_types.length > 0) {
+    // pivot table objects — map through type relation
+    return game.boardgame_types.map(bt => bt.type?.type || bt.type).filter(Boolean)
+  }
+  return []
+}
+
 function GameCard({ game }) {
-  const types = game.types?.map(t => t.type) || []
+  const types = extractTypes(game)
   const owner = ownerLabel(game)
 
   return (
@@ -130,7 +143,7 @@ export default function BoardgamesPage() {
     return games.filter(g => {
       if (search && !g.name.toLowerCase().includes(search.toLowerCase())) return false
       if (filterType) {
-        const types = g.types?.map(t => t.type) || []
+        const types = extractTypes(g)
         if (!types.includes(filterType)) return false
       }
       if (filterMinPl && g.max_players < parseInt(filterMinPl)) return false

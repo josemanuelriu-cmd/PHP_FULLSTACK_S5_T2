@@ -42,25 +42,22 @@ export default function BoardgameForm({ mode }) {
   function removeType(typeId) { setGameTypeIds(prev => prev.filter(i => i !== typeId)) }
 
   useEffect(() => {
-    async function loadTypes() {
+    async function init() {
+      setLoading(true)
       try {
-        const res  = await fetch(`${API}/types`, { headers: authHeaders })
-        if (res.ok) {
-          const data = await res.json()
-          setAllTypes(Array.isArray(data) ? data : (data.data || []))
+        // Load all available types
+        const typesRes = await fetch(`${API}/types`, { headers: authHeaders })
+        if (typesRes.ok) {
+          const tData = await typesRes.json()
+          setAllTypes(Array.isArray(tData) ? tData : (tData.data || []))
         }
-      } catch {}
-    }
-    loadTypes()
 
-    if (isEdit && id) {
-      async function loadGame() {
-        setLoading(true)
-        try {
+        if (isEdit && id) {
           const res  = await fetch(`${API}/boardgames/${id}`, { headers: authHeaders })
           if (!res.ok) throw new Error('No se pudo cargar el juego')
           const raw  = await res.json()
           const data = raw.data || raw
+
           setForm({
             name:          data.name          || '',
             min_players:   data.min_players   ?? '',
@@ -70,14 +67,27 @@ export default function BoardgameForm({ mode }) {
             description:   data.description   || '',
             owner_user_id: data.owner_user_id ?? '',
           })
-          setGameTypeIds(data.types?.map(t => t.id) || [])
-        } catch (e) {
-          setError(e.message)
+
+          // Types can come as:
+          // - data.types  → array of type objects [{ id, type, ... }]
+          // - data.type_ids → array of ids [1, 2, 3]
+          // - data.boardgame_types → pivot table objects [{ type_id, ... }]
+          let typeIds = []
+          if (Array.isArray(data.types) && data.types.length > 0) {
+            typeIds = data.types.map(t => t.id ?? t.type_id ?? t)
+          } else if (Array.isArray(data.type_ids) && data.type_ids.length > 0) {
+            typeIds = data.type_ids
+          } else if (Array.isArray(data.boardgame_types) && data.boardgame_types.length > 0) {
+            typeIds = data.boardgame_types.map(bt => bt.type_id ?? bt.id)
+          }
+          setGameTypeIds(typeIds.map(Number).filter(Boolean))
         }
-        setLoading(false)
+      } catch (e) {
+        setError(e.message)
       }
-      loadGame()
+      setLoading(false)
     }
+    init()
   }, [id, isEdit])
 
   function set(k, v) {
@@ -113,7 +123,9 @@ export default function BoardgameForm({ mode }) {
       duration:      parseInt(form.duration),
       description:   form.description.trim() || null,
       owner_user_id: form.owner_user_id !== '' ? parseInt(form.owner_user_id) : null,
-      types:         gameTypeIds,
+      // Send type IDs in multiple formats — the backend uses whichever it expects
+      types:         gameTypeIds,   // most common: $boardgame->types()->sync($request->types)
+      type_ids:      gameTypeIds,   // alternative key name
     }
 
     try {
