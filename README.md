@@ -17,6 +17,7 @@ Frontend de la aplicación web **ZAS! Juegos de mesa y rol**, desarrollado en **
 - [Endpoints de la API utilizados](#endpoints-de-la-api-utilizados)
 - [Tecnologías](#tecnologías)
 - [Notas para el backend](#notas-para-el-backend)
+- [Usuarios de prueba](#Usuarios)
 
 ---
 
@@ -299,6 +300,12 @@ El frontend usa **Passport** (Bearer token). El token se almacena en `localStora
 
 ---
 
-## Licencia
+## Usuarios de prueba
+Para poder hacer pruebas con la aplicación se han creado 4 usuarios con los 4 roles.
 
-Proyecto interno del club ZAS! Juegos de mesa y rol. Uso privado.
+| Email | Password | Rol |
+|-------|----------|-----|
+| test@example.com | password | admin |
+| test2@example.com | password2 | junta |
+| test3@example.com | password3 | partner |
+| test4@example.com | password4 | guest |
