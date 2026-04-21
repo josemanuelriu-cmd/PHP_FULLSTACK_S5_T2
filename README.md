@@ -51,7 +51,7 @@ cp .env.example .env
 Edita el fichero `.env` y ajusta la URL de tu backend:
 
 ```env
-VITE_API_URL=http://localhost:8000/v1
+VITE_API_URL=http://localhost:8000/api/v1
 ```
 
 Si el backend corre en otro host o puerto, cámbialo aquí. Esta variable es la única configuración necesaria.
