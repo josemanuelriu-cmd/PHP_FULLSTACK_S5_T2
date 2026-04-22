@@ -25,7 +25,10 @@ Frontend de la aplicación web **ZAS! Juegos de mesa y rol**, desarrollado en **
 
 - Node.js 18 o superior
 - npm 9 o superior
-- Backend Laravel corriendo (ver sección [Notas para el backend](#notas-para-el-backend))
+- Backend Laravel corriendo con:
+  - `php artisan migrate` ejecutado
+  - `php artisan passport:install` ejecutado
+  - (ver sección [Notas para el backend](#notas-para-el-backend))
 
 ---
 
@@ -184,7 +187,7 @@ Los mensajes de confirmación/error en la ficha de sesión (apuntarse, darse de 
 
 ## Endpoints de la API utilizados
 
-Base URL configurada en `VITE_API_URL` (por defecto `http://localhost:8000/v1`).
+Base URL configurada en `VITE_API_URL` (por defecto `http://localhost:8000/api/v1`).
 
 ### Autenticación
 | Método | Ruta | Descripción |
@@ -309,3 +312,15 @@ Para poder hacer pruebas con la aplicación se han creado 4 usuarios con los 4 r
 | test2@example.com | password2 | junta |
 | test3@example.com | password3 | partner |
 | test4@example.com | password4 | guest |
+
+> ⚠️ Estos usuarios son solo para entorno de desarrollo. No uses estas credenciales en producción, no funcionarán.
+
+## Solución de problemas frecuentes
+
+| Error | Causa | Solución |
+|-------|-------|----------|
+| `invalid key supplied` | Claves OAuth de Passport no generadas | `php artisan passport:keys` |
+| `401 Unauthorized` | Token expirado o inválido | Hacer logout y volver a iniciar sesión |
+| `422 Unprocessable Content` en PUT boardgame | Regla de validación de `owner_user_id` sin `nullable` | Añadir `nullable` a la regla en `BoardgameController` |
+| Los tipos no se muestran en los juegos | Falta `with('types')` en el controlador | Ver sección Notas para el backend |
+| CORS bloqueado | Backend no permite el origen del frontend | Añadir `localhost:5173` en `config/cors.php` |
