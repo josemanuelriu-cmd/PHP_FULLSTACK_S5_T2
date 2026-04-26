@@ -308,7 +308,7 @@ Para poder hacer pruebas con la aplicación se han creado 4 usuarios con los 4 r
 
 | Email | Password | Rol |
 |-------|----------|-----|
-| test@example.com | password | admin |
+| test1@example.com | password1 | admin |
 | test2@example.com | password2 | junta |
 | test3@example.com | password3 | partner |
 | test4@example.com | password4 | guest |

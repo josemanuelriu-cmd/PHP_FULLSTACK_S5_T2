@@ -310,7 +310,7 @@ Four users have been created for testing purposes, one for each role.
 
 | Email | Password | Role |
 |-------|----------|------|
-| test@example.com | password | admin |
+| test1@example.com | password1 | admin |
 | test2@example.com | password2 | junta |
 | test3@example.com | password3 | partner |
 | test4@example.com | password4 | guest |
