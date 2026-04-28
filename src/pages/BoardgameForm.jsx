@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { createApi } from '../services/api'
 
 function toSlug(name) {
   return name
@@ -23,6 +24,7 @@ export default function BoardgameForm({ mode }) {
   const navigate   = useNavigate()
   const { authHeaders, API, user } = useAuth()
 
+  const api    = createApi(API, authHeaders)
   const isEdit = mode === 'edit'
 
   const [form,        setForm]        = useState({ ...EMPTY_FORM, owner_user_id: user?.id ?? '' })
@@ -45,17 +47,11 @@ export default function BoardgameForm({ mode }) {
     async function init() {
       setLoading(true)
       try {
-        // Load all available types
-        const typesRes = await fetch(`${API}/types`, { headers: authHeaders })
-        if (typesRes.ok) {
-          const tData = await typesRes.json()
-          setAllTypes(Array.isArray(tData) ? tData : (tData.data || []))
-        }
+        const types = await api.types.list()
+        setAllTypes(types)
 
         if (isEdit && id) {
-          const res  = await fetch(`${API}/boardgames/${id}`, { headers: authHeaders })
-          if (!res.ok) throw new Error('No se pudo cargar el juego')
-          const raw  = await res.json()
+          const raw  = await api.boardgames.get(id)
           const data = raw.data || raw
 
           setForm({
@@ -129,28 +125,19 @@ export default function BoardgameForm({ mode }) {
     }
 
     try {
-      const url    = isEdit ? `${API}/boardgames/${id}` : `${API}/boardgames`
-      const method = isEdit ? 'PUT' : 'POST'
-      const res    = await fetch(url, { method, headers: authHeaders, body: JSON.stringify(payload) })
-      const data   = await res.json()
-
-      if (!res.ok) {
-        if (data.errors) {
-          const fe = {}
-          Object.entries(data.errors).forEach(([k, v]) => { fe[k] = Array.isArray(v) ? v[0] : v })
-          setFieldErrors(fe)
-        } else {
-          setError(data.message || 'Error al guardar')
-        }
-        setSaving(false)
-        return
-      }
-
-      // Navigate using the id (new or existing)
+      const data = isEdit
+        ? await api.boardgames.update(id, payload)
+        : await api.boardgames.create(payload)
       const savedId = data.data?.id || data.id || id
       navigate(`/boardgames/${savedId}`)
-    } catch {
-      setError('No se pudo conectar con el servidor')
+    } catch (e) {
+      if (e.data?.errors) {
+        const fe = {}
+        Object.entries(e.data.errors).forEach(([k, v]) => { fe[k] = Array.isArray(v) ? v[0] : v })
+        setFieldErrors(fe)
+      } else {
+        setError(e.message)
+      }
     }
     setSaving(false)
   }

@@ -10,19 +10,7 @@ const STATUS_MAP = {
   finished: { label: 'Terminada', cls: 'status-finished' },
 }
 
-const GAME_ICONS = ['♟', '⚔', '🃏', '♜', '🎲', '♞', '🏰', '🗡']
-const PALETTE    = ['#800020','#6C63FF','#4aab78','#d4963a','#5a9fd4','#9b59b6']
-
-function gameIcon(name) {
-  let h = 0; for (const c of (name||'')) h=(h*17+c.charCodeAt(0))%GAME_ICONS.length; return GAME_ICONS[h]
-}
-function avatarColor(str) {
-  let h = 0; for (const c of (str||'')) h=(h*31+c.charCodeAt(0))%PALETTE.length; return PALETTE[h]
-}
-function initials(nick, name) {
-  const s = nick||name||'?'; return s.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)
-}
-function fmtTime(t) { return t ? t.slice(0,5) : '' }
+import { avatarColor, initials, fmtTime, gameIcon } from '../utils/helpers'
 
 export default function GamesList({ games: gamesFromParent, initialGames, loading, session }) {
   const { authHeaders, API } = useAuth()

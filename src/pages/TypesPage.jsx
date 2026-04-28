@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-
-// Table: types — fields: id, type (enum), description
+import { createApi } from '../services/api'
 
 function TypeCard({ t }) {
   return (
@@ -24,6 +23,7 @@ function TypeCard({ t }) {
 
 export default function TypesPage() {
   const { authHeaders, API, user } = useAuth()
+  const api = createApi(API, authHeaders)
 
   const [types,   setTypes]   = useState([])
   const [loading, setLoading] = useState(true)
@@ -36,10 +36,7 @@ export default function TypesPage() {
     async function load() {
       setLoading(true); setError('')
       try {
-        const res  = await fetch(`${API}/types`, { headers: authHeaders })
-        if (!res.ok) throw new Error('No se pudieron cargar los tipos')
-        const data = await res.json()
-        setTypes(Array.isArray(data) ? data : (data.data || []))
+        setTypes(await api.types.list())
       } catch (e) {
         setError(e.message)
       }

@@ -1,26 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-
-// owner_user_id: NULL or 0 → club ZAS, otherwise → user nickname from owner relation
-
-function ownerLabel(game) {
-  if (!game.owner_user_id || game.owner_user_id === 0) return 'ZAS!'
-  return game.owner?.nickname || game.owner?.name || `Usuario #${game.owner_user_id}`
-}
-
-function extractTypes(game) {
-  // Handle different API response formats for types relation
-  if (Array.isArray(game.types) && game.types.length > 0) {
-    // [{ id, type, description }] — standard eager load
-    return game.types.map(t => t.type || t).filter(Boolean)
-  }
-  if (Array.isArray(game.boardgame_types) && game.boardgame_types.length > 0) {
-    // pivot table objects — map through type relation
-    return game.boardgame_types.map(bt => bt.type?.type || bt.type).filter(Boolean)
-  }
-  return []
-}
+import { createApi } from '../services/api'
+import { ownerLabel, extractTypes } from '../utils/helpers'
 
 function GameCard({ game }) {
   const types = extractTypes(game)
@@ -80,6 +62,7 @@ function GameCard({ game }) {
 
 export default function BoardgamesPage() {
   const { authHeaders, API, user } = useAuth()
+  const api = createApi(API, authHeaders)
 
   const [games,   setGames]   = useState([])
   const [loading, setLoading] = useState(true)
@@ -101,24 +84,15 @@ export default function BoardgamesPage() {
     async function load() {
       setLoading(true); setError('')
       try {
-        const [gamesRes, typesRes, usersRes] = await Promise.all([
-          fetch(`${API}/boardgames`, { headers: authHeaders }),
-          fetch(`${API}/types`,      { headers: authHeaders }),
-          fetch(`${API}/users`,      { headers: authHeaders }),
+        const [rawGames, allTypes, users] = await Promise.all([
+          api.boardgames.list(),
+          api.types.list(),
+          api.users.list().catch(() => []),
         ])
-        if (!gamesRes.ok) throw new Error('No se pudieron cargar los juegos')
 
-        // Build user lookup map id → user
-        let userMap = {}
-        if (usersRes.ok) {
-          const uData = await usersRes.json()
-          const uList = Array.isArray(uData) ? uData : (uData.data || [])
-          uList.forEach(u => { userMap[u.id] = u })
-        }
+        const userMap = {}
+        users.forEach(u => { userMap[u.id] = u })
 
-        const gData = await gamesRes.json()
-        const rawGames = Array.isArray(gData) ? gData : (gData.data || [])
-        // Enrich each game with owner from map if not already present
         const enriched = rawGames.map(g => {
           if (g.owner?.nickname || g.owner?.name) return g
           if (!g.owner_user_id || g.owner_user_id === 0) return g
@@ -126,11 +100,7 @@ export default function BoardgamesPage() {
           return owner ? { ...g, owner } : g
         })
         setGames(enriched)
-
-        if (typesRes.ok) {
-          const tData = await typesRes.json()
-          setAllTypes(Array.isArray(tData) ? tData : (tData.data || []))
-        }
+        setAllTypes(allTypes)
       } catch (e) {
         setError(e.message)
       }

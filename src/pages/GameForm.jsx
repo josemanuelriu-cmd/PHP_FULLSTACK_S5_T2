@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { createApi } from '../services/api'
 
 const STATUS_OPTIONS = [
   { value: 'open',     label: 'Abierta' },
@@ -14,20 +15,14 @@ const EMPTY = {
   status: 'open', necesary_know_how: false,
 }
 
-const PALETTE = ['#800020','#6C63FF','#4aab78','#d4963a','#5a9fd4','#9b59b6']
-function avatarColor(str) {
-  let h = 0; for (const c of (str||'')) h=(h*31+c.charCodeAt(0))%PALETTE.length; return PALETTE[h]
-}
-function initials(nick, name) {
-  const s = nick||name||'?'; return s.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)
-}
+import { avatarColor, initials } from '../utils/helpers'
 
 export default function GameForm({ mode }) {
   const { sessionId, id: gameId } = useParams()
   const navigate   = useNavigate()
   const { authHeaders, API, user } = useAuth()
-
-  const isEdit    = mode === 'edit'
+  const api    = createApi(API, authHeaders)
+  const isEdit = mode === 'edit'
   const canAccess = user?.type !== 'guest'
 
   const [form,        setForm]        = useState(EMPTY)
@@ -51,11 +46,7 @@ export default function GameForm({ mode }) {
   async function loadGameUsers() {
     if (!gameId) return
     try {
-      const res = await fetch(`${API}/games/${gameId}/users`, { headers: authHeaders })
-      if (res.ok) {
-        const d = await res.json()
-        setGameUsers(Array.isArray(d) ? d : (d.data || []))
-      }
+      setGameUsers(await api.games.getUsers(gameId))
     } catch {}
   }
 
@@ -63,46 +54,39 @@ export default function GameForm({ mode }) {
     async function load() {
       setLoading(true)
       try {
-        const bgRes = await fetch(`${API}/boardgames`, { headers: authHeaders })
-        if (bgRes.ok) {
-          const d = await bgRes.json()
-          setBoardgames(Array.isArray(d) ? d : (d.data||[]))
-        }
+        const bgs = await api.boardgames.list()
+        setBoardgames(bgs)
 
         if (isEdit && gameId) {
-          const [gRes, uRes] = await Promise.all([
-            fetch(`${API}/games/${gameId}`,       { headers: authHeaders }),
-            fetch(`${API}/games/${gameId}/users`, { headers: authHeaders }),
+          const [raw, users] = await Promise.all([
+            api.games.get(gameId),
+            api.games.getUsers(gameId).catch(() => []),
           ])
-          if (!gRes.ok) throw new Error('No se pudo cargar la partida')
-          const raw = await gRes.json()
-          const g   = raw.data || raw
+          const g = raw.data || raw
           setGameData(g)
           setForm({
             boardgame_id:      g.boardgame_id       ?? '',
             max_players:       g.max_players        ?? '',
-            start_time:        g.start_time ? g.start_time.slice(0,5) : '',
+            start_time:        g.start_time ? g.start_time.slice(0, 5) : '',
             status:            g.status             || 'open',
             necesary_know_how: g.necesary_know_how ? true : false,
           })
-          if (uRes.ok) {
-            const ud = await uRes.json()
-            setGameUsers(Array.isArray(ud) ? ud : (ud.data || []))
-          }
+          setGameUsers(users)
           if (g.zassession_id) {
-            const sRes = await fetch(`${API}/zassessions/${g.zassession_id}`, { headers: authHeaders })
-            if (sRes.ok) { const sd=await sRes.json(); setSessionData(sd.data||sd) }
+            try {
+              const sd = await api.sessions.get(g.zassession_id)
+              setSessionData(sd.data || sd)
+            } catch {}
           }
         } else if (sessionId) {
-          const sRes = await fetch(`${API}/zassessions/${sessionId}`, { headers: authHeaders })
-          if (sRes.ok) {
-            const sd = await sRes.json()
+          try {
+            const sd = await api.sessions.get(sessionId)
             const s  = sd.data || sd
             setSessionData(s)
-            setForm(f => ({ ...f, start_time: s.start_time ? s.start_time.slice(0,5) : '' }))
-          }
+            setForm(f => ({ ...f, start_time: s.start_time ? s.start_time.slice(0, 5) : '' }))
+          } catch {}
         }
-      } catch(e) { setError(e.message) }
+      } catch (e) { setError(e.message) }
       setLoading(false)
     }
     load()
@@ -122,20 +106,11 @@ export default function GameForm({ mode }) {
   async function handleKick(userId) {
     setKickingId(userId); setKickMsg('')
     try {
-      const res = await fetch(`${API}/games/${gameId}/leave`, {
-        method: 'DELETE',
-        headers: { ...authHeaders, 'X-User-Id': userId },
-        body: JSON.stringify({ user_id: userId }),
-      })
-      if (res.ok) {
-        setKickMsg('Jugador dado de baja correctamente')
-        await loadGameUsers()
-      } else {
-        const d = await res.json()
-        setKickMsg(d.message || 'No se pudo dar de baja al jugador')
-      }
-    } catch {
-      setKickMsg('Error de conexión')
+      await api.games.leave(gameId)
+      setKickMsg('Jugador dado de baja correctamente')
+      await loadGameUsers()
+    } catch (e) {
+      setKickMsg(e.message)
     }
     setKickingId(null)
   }
@@ -160,22 +135,18 @@ export default function GameForm({ mode }) {
     }
 
     try {
-      const url    = isEdit ? `${API}/games/${gameId}` : `${API}/games`
-      const method = isEdit ? 'PUT' : 'POST'
-      const res    = await fetch(url, { method, headers: authHeaders, body: JSON.stringify(payload) })
-      const data   = await res.json()
-
-      if (!res.ok) {
-        if (data.errors) {
-          const fe={}; Object.entries(data.errors).forEach(([k,v])=>{fe[k]=Array.isArray(v)?v[0]:v})
-          setFieldErrors(fe)
-        } else { setError(data.message||'Error al guardar') }
-        setSaving(false); return
-      }
-
+      const data = isEdit
+        ? await api.games.update(gameId, payload)
+        : await api.games.create(payload)
       const sid = sessionId || sessionData?.id || data.data?.zassession_id || data.zassession_id
       navigate(`/sessions/${sid}`)
-    } catch { setError('No se pudo conectar con el servidor') }
+    } catch (e) {
+      if (e.data?.errors) {
+        const fe = {}
+        Object.entries(e.data.errors).forEach(([k, v]) => { fe[k] = Array.isArray(v) ? v[0] : v })
+        setFieldErrors(fe)
+      } else { setError(e.message) }
+    }
     setSaving(false)
   }
 

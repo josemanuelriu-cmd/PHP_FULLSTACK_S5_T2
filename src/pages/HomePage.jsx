@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { createApi } from '../services/api'
 import SessionCard from '../components/SessionCard'
 import AttendeesList from '../components/AttendeesList'
 import GamesList from '../components/GamesList'
@@ -7,6 +8,7 @@ import logoImg from '../assets/logo.png'
 
 export default function HomePage({ onLoginClick }) {
   const { token, authHeaders, API } = useAuth()
+  const api = createApi(API, authHeaders)
 
   const [session,      setSession]      = useState(null)
   const [sessionUsers, setSessionUsers] = useState([])
@@ -19,21 +21,13 @@ export default function HomePage({ onLoginClick }) {
   async function loadNextSession() {
     setLoadingSession(true); setErrorMsg('')
     try {
-      const res = await fetch(`${API}/zassessions`, { headers: authHeaders })
-      if (!res.ok) throw new Error('No se pudieron cargar las sesiones')
-      const data = await res.json()
-      const list = Array.isArray(data) ? data : (data.data || [])
-
-      // Find the next upcoming session by date field
-      const now = new Date()
-      now.setHours(0, 0, 0, 0)
-      const upcoming = list
+      const list = await api.sessions.list()
+      const now  = new Date(); now.setHours(0, 0, 0, 0)
+      const next = list
         .filter(s => s.date && new Date(s.date) >= now)
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
-
-      const next = upcoming[0] || list[list.length - 1] || null
+        .sort((a, b) => new Date(a.date) - new Date(b.date))[0]
+        || list[list.length - 1] || null
       setSession(next)
-
       if (next) {
         loadSessionUsers(next.id)
         loadSessionGames(next.id)
@@ -48,10 +42,7 @@ export default function HomePage({ onLoginClick }) {
   async function loadSessionUsers(id) {
     setLoadingUsers(true)
     try {
-      const res = await fetch(`${API}/zassessions/${id}/users`, { headers: authHeaders })
-      if (!res.ok) throw new Error()
-      const data = await res.json()
-      const list = Array.isArray(data) ? data : (data.data || [])
+      const list = await api.sessions.getUsers(id)
       setSessionUsers(list.slice(0, 15))
     } catch {
       setSessionUsers([])
@@ -62,37 +53,22 @@ export default function HomePage({ onLoginClick }) {
   async function loadSessionGames(id) {
     setLoadingGames(true)
     try {
-      const res = await fetch(`${API}/zassessions/${id}/games`, { headers: authHeaders })
-      if (!res.ok) throw new Error()
-      const data = await res.json()
-      const list = Array.isArray(data) ? data : (data.data || [])
+      const list = await api.sessions.getGames(id)
 
-      // Load boardgames lookup if any game is missing boardgame name
       let bgMap = {}
       if (list.some(g => !g.boardgame?.name)) {
         try {
-          const bgRes = await fetch(`${API}/boardgames`, { headers: authHeaders })
-          if (bgRes.ok) {
-            const bgData = await bgRes.json()
-            const bgList = Array.isArray(bgData) ? bgData : (bgData.data || [])
-            bgList.forEach(b => { bgMap[b.id] = b })
-          }
+          const bgs = await api.boardgames.list()
+          bgs.forEach(b => { bgMap[b.id] = b })
         } catch {}
       }
 
-      // Fetch users per game if not already eager-loaded
       const enriched = await Promise.all(
         list.map(async g => {
           const boardgame = (g.boardgame?.name ? g.boardgame : bgMap[g.boardgame_id]) || g.boardgame || {}
           let users = g.users || []
           if (users.length === 0) {
-            try {
-              const uRes = await fetch(`${API}/games/${g.id}/users`, { headers: authHeaders })
-              if (uRes.ok) {
-                const ud = await uRes.json()
-                users = Array.isArray(ud) ? ud : (ud.data || [])
-              }
-            } catch {}
+            try { users = await api.games.getUsers(g.id) } catch {}
           }
           return { ...g, boardgame, users, users_count: users.length }
         })

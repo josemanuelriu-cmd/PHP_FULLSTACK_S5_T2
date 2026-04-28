@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../hooks/useToast'
+import { createApi } from '../services/api'
+import { avatarColor, initials, fmtDate, fmtTime, ROLE_LABELS, ROLE_BADGE } from '../utils/helpers'
 
 // Reglas de negocio:
 // - Unirse a una partida sin estar en la sesión → join automático a la sesión primero
@@ -14,24 +16,6 @@ const STATUS_MAP = {
   playing:  { label: 'Jugando',   cls: 'status-playing' },
   finished: { label: 'Terminada', cls: 'status-finished' },
 }
-const ROLE_BADGE  = { admin:'badge-red', junta:'badge-amber', partner:'badge-green', guest:'badge-blue' }
-const ROLE_LABELS = { admin:'Admin', junta:'Junta', partner:'Socio', guest:'Invitado' }
-const PALETTE     = ['#800020','#6C63FF','#4aab78','#d4963a','#5a9fd4','#9b59b6']
-
-function avatarColor(str) {
-  let h = 0; for (const c of (str||'')) h=(h*31+c.charCodeAt(0))%PALETTE.length; return PALETTE[h]
-}
-function initials(nick, name) {
-  const s = nick||name||'?'; return s.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)
-}
-function fmtDate(d) {
-  if (!d) return '—'
-  try {
-    const [y,m,day]=d.split('-').map(Number)
-    return new Date(y,m-1,day).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
-  } catch { return d }
-}
-function fmtTime(t) { return t ? t.slice(0,5) : '' }
 
 // ── Toast display ─────────────────────────────────────────────────────────────
 function Toast({ msg }) {
@@ -44,7 +28,7 @@ function Toast({ msg }) {
 }
 
 // ── GameRow ───────────────────────────────────────────────────────────────────
-function GameRow({ game, authUser, authHeaders, API, sessionId, isSessionAttendee, sessionFull, onRefresh, onSessionMsg }) {
+function GameRow({ game, authUser, api, sessionId, isSessionAttendee, sessionFull, onRefresh, onSessionMsg }) {
   const bg       = game.boardgame || {}
   const name     = bg.name || `Partida #${game.id}`
   const host     = game.host?.nickname || game.host?.name || '—'
@@ -62,43 +46,35 @@ function GameRow({ game, authUser, authHeaders, API, sessionId, isSessionAttende
 
   async function joinGame() {
     setBusy(true)
-
-    // Auto-join session first if not already attendee
     if (!isSessionAttendee) {
       if (sessionFull) {
         setGameMsg('La sesión está completa, no puedes apuntarte a esta partida', true)
         setBusy(false); return
       }
-      const sRes = await fetch(`${API}/zassessions/${sessionId}/join`, {
-        method: 'POST', headers: authHeaders
-      })
-      if (!sRes.ok) {
-        const d = await sRes.json()
-        setGameMsg(d.message || 'No se pudo apuntarte a la sesión', true)
+      try {
+        await api.sessions.join(sessionId)
+        onSessionMsg('Te hemos apuntado a la sesión automáticamente', false)
+      } catch (e) {
+        setGameMsg(e.message, true)
         setBusy(false); return
       }
-      // Notify parent that session attendance changed
-      onSessionMsg('Te hemos apuntado a la sesión automáticamente', false)
     }
-
-    const res = await fetch(`${API}/games/${game.id}/join`, { method:'POST', headers: authHeaders })
-    if (res.ok) {
+    try {
+      await api.games.join(game.id)
       setGameMsg('¡Te has apuntado a la partida!', false)
-    } else {
-      const d = await res.json()
-      setGameMsg(d.message || 'Error al unirse a la partida', true)
+    } catch (e) {
+      setGameMsg(e.message, true)
     }
     onRefresh(); setBusy(false)
   }
 
   async function leaveGame() {
     setBusy(true)
-    const res = await fetch(`${API}/games/${game.id}/leave`, { method:'DELETE', headers: authHeaders })
-    if (res.ok) {
+    try {
+      await api.games.leave(game.id)
       setGameMsg('Te has dado de baja de la partida', false)
-    } else {
-      const d = await res.json()
-      setGameMsg(d.message || 'Error al salir de la partida', true)
+    } catch (e) {
+      setGameMsg(e.message, true)
     }
     onRefresh(); setBusy(false)
   }
@@ -169,6 +145,7 @@ export default function SessionDetail() {
   const { id }     = useParams()
   const navigate   = useNavigate()
   const { authHeaders, API, user: authUser } = useAuth()
+  const api = createApi(API, authHeaders)
 
   const [session,    setSession]    = useState(null)
   const [attendees,  setAttendees]  = useState([])
@@ -196,66 +173,43 @@ export default function SessionDetail() {
 
   const loadAll = useCallback(async () => {
     try {
-      const [sRes, uRes, gRes] = await Promise.all([
-        fetch(`${API}/zassessions/${id}`,       { headers: authHeaders }),
-        fetch(`${API}/zassessions/${id}/users`,  { headers: authHeaders }),
-        fetch(`${API}/zassessions/${id}/games`,  { headers: authHeaders }),
+      const [sessionData, attendeeList, rawGames] = await Promise.all([
+        api.sessions.get(id),
+        api.sessions.getUsers(id),
+        api.sessions.getGames(id),
       ])
-      if (!sRes.ok) throw new Error('Sesión no encontrada')
-      const [sData, uData, gData] = await Promise.all([sRes.json(), uRes.json(), gRes.json()])
-      setSession(sData.data || sData)
-      setAttendees(Array.isArray(uData) ? uData : (uData.data||[]))
+      setSession(sessionData.data || sessionData)
+      setAttendees(attendeeList)
 
-      const rawGames = Array.isArray(gData) ? gData : (gData.data||[])
-
-      // Build boardgame lookup
       let bgMap = {}
       if (rawGames.some(g => !g.boardgame?.name)) {
         try {
-          const bgRes = await fetch(`${API}/boardgames`, { headers: authHeaders })
-          if (bgRes.ok) {
-            const bd = await bgRes.json()
-            const bl = Array.isArray(bd) ? bd : (bd.data||[])
-            bl.forEach(b => { bgMap[b.id] = b })
-          }
+          const bgs = await api.boardgames.list()
+          bgs.forEach(b => { bgMap[b.id] = b })
         } catch {}
       }
 
-      // Build user lookup to resolve host nicknames
       let userMap = {}
       if (rawGames.some(g => g.host_user_id && !g.host?.nickname && !g.host?.name)) {
         try {
-          const usRes = await fetch(`${API}/users`, { headers: authHeaders })
-          if (usRes.ok) {
-            const ud = await usRes.json()
-            const ul = Array.isArray(ud) ? ud : (ud.data||[])
-            ul.forEach(u => { userMap[u.id] = u })
-          }
+          const users = await api.users.list()
+          users.forEach(u => { userMap[u.id] = u })
         } catch {}
       }
 
-      // Fetch users per game and resolve host
       const gamesWithUsers = await Promise.all(
         rawGames.map(async g => {
           const boardgame = (g.boardgame?.name ? g.boardgame : bgMap[g.boardgame_id]) || g.boardgame || {}
-          const host = (g.host?.nickname || g.host?.name)
-            ? g.host
-            : (userMap[g.host_user_id] || null)
+          const host = (g.host?.nickname || g.host?.name) ? g.host : (userMap[g.host_user_id] || null)
           let users = g.users || []
           if (users.length === 0) {
-            try {
-              const r = await fetch(`${API}/games/${g.id}/users`, { headers: authHeaders })
-              if (r.ok) {
-                const ud = await r.json()
-                users = Array.isArray(ud) ? ud : (ud.data||[])
-              }
-            } catch {}
+            try { users = await api.games.getUsers(g.id) } catch {}
           }
           return { ...g, boardgame, host, users, users_count: users.length }
         })
       )
       setGames(gamesWithUsers)
-    } catch(e) { setError(e.message) }
+    } catch (e) { setError(e.message) }
     setLoading(false)
   }, [id])
 
@@ -263,13 +217,12 @@ export default function SessionDetail() {
 
   async function joinSession() {
     setJoinBusy(true)
-    const res = await fetch(`${API}/zassessions/${id}/join`, { method:'POST', headers: authHeaders })
-    if (res.ok) {
+    try {
+      await api.sessions.join(id)
       setSessionMsg('¡Te has apuntado a la sesión!', false)
       loadAll()
-    } else {
-      const d = await res.json()
-      setSessionMsg(d.message || 'Error al apuntarse', true)
+    } catch (e) {
+      setSessionMsg(e.message, true)
     }
     setJoinBusy(false)
   }
@@ -280,24 +233,23 @@ export default function SessionDetail() {
       return
     }
     setJoinBusy(true)
-    const res = await fetch(`${API}/zassessions/${id}/leave`, { method:'DELETE', headers: authHeaders })
-    if (res.ok) {
+    try {
+      await api.sessions.leave(id)
       setSessionMsg('Te has dado de baja de la sesión', false)
       loadAll()
-    } else {
-      const d = await res.json()
-      setSessionMsg(d.message || 'Error al darse de baja', true)
+    } catch (e) {
+      setSessionMsg(e.message, true)
     }
     setJoinBusy(false)
   }
 
   async function handleDelete() {
     setDeleting(true)
-    const res = await fetch(`${API}/zassessions/${id}`, { method:'DELETE', headers: authHeaders })
-    if (res.ok) navigate('/sessions')
-    else {
-      const d = await res.json()
-      setError(d.message || 'Error al eliminar')
+    try {
+      await api.sessions.delete(id)
+      navigate('/sessions')
+    } catch (e) {
+      setError(e.message)
       setDeleting(false); setConfirmDel(false)
     }
   }
@@ -481,8 +433,7 @@ export default function SessionDetail() {
                   key={g.id}
                   game={g}
                   authUser={authUser}
-                  authHeaders={authHeaders}
-                  API={API}
+                  api={api}
                   sessionId={id}
                   isSessionAttendee={isAttendee}
                   sessionFull={sessionFull}

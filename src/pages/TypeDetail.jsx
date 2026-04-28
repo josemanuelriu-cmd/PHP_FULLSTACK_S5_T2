@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { createApi } from '../services/api'
 
 export default function TypeDetail() {
   const { id }     = useParams()
   const navigate   = useNavigate()
   const { authHeaders, API, user } = useAuth()
+  const api = createApi(API, authHeaders)
 
   const [type,       setType]       = useState(null)
   const [loading,    setLoading]    = useState(true)
@@ -19,9 +21,7 @@ export default function TypeDetail() {
     async function load() {
       setLoading(true); setError('')
       try {
-        const res  = await fetch(`${API}/types/${id}`, { headers: authHeaders })
-        if (!res.ok) throw new Error('Tipo no encontrado')
-        const data = await res.json()
+        const data = await api.types.get(id)
         setType(data.data || data)
       } catch (e) {
         setError(e.message)
@@ -34,11 +34,7 @@ export default function TypeDetail() {
   async function handleDelete() {
     setDeleting(true)
     try {
-      const res = await fetch(`${API}/types/${id}`, {
-        method: 'DELETE',
-        headers: authHeaders,
-      })
-      if (!res.ok) throw new Error('No se pudo eliminar el tipo')
+      await api.types.delete(id)
       navigate('/types')
     } catch (e) {
       setError(e.message)
