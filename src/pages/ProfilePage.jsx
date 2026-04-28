@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { createApi } from '../services/api'
 
 // Users table fields:
 // id, num_partner, nickname, name, password, type (admin|junta|partner|guest),
@@ -16,6 +17,7 @@ const EMPTY_FORM = {
 
 export default function ProfilePage() {
   const { authHeaders, API, user: authUser, login } = useAuth()
+  const api = createApi(API, authHeaders)
 
   const isAdmin = authUser?.type === 'admin'
 
@@ -36,11 +38,7 @@ export default function ProfilePage() {
     if (!isAdmin) return
     async function loadUsers() {
       try {
-        const res  = await fetch(`${API}/users`, { headers: authHeaders })
-        if (res.ok) {
-          const data = await res.json()
-          setAllUsers(Array.isArray(data) ? data : (data.data || []))
-        }
+        setAllUsers(await api.users.list())
       } catch {}
     }
     loadUsers()
@@ -52,10 +50,8 @@ export default function ProfilePage() {
       if (!selectedUserId) return
       setLoading(true); setError(''); setSuccess(''); setFieldErrors({})
       try {
-        const res  = await fetch(`${API}/users/${selectedUserId}`, { headers: authHeaders })
-        if (!res.ok) throw new Error('No se pudo cargar el usuario')
-        const raw  = await res.json()
-        const u    = raw.data || raw
+        const raw = await api.users.get(selectedUserId)
+        const u   = raw.data || raw
         setForm({
           name:                  u.name        || '',
           nickname:              u.nickname    || '',
@@ -130,41 +126,27 @@ export default function ProfilePage() {
     }
 
     try {
-      const res  = await fetch(`${API}/users/${selectedUserId}`, {
-        method: 'PUT',
-        headers: authHeaders,
-        body: JSON.stringify(payload),
-      })
-      const data = await res.json()
-
-      if (!res.ok) {
-        if (data.errors) {
-          const fe = {}
-          Object.entries(data.errors).forEach(([k, v]) => { fe[k] = Array.isArray(v) ? v[0] : v })
-          setFieldErrors(fe)
-        } else {
-          setError(data.message || 'Error al guardar')
-        }
-        setSaving(false)
-        return
-      }
+      const data = await api.users.update(selectedUserId, payload)
 
       setSuccess('Perfil actualizado correctamente')
-      // If updating own profile, refresh auth user
       if (String(selectedUserId) === String(authUser?.id)) {
         const updated = data.data || data.user || data
         if (updated?.id) {
           const stored = JSON.parse(localStorage.getItem('zas_user') || '{}')
           const merged = { ...stored, ...updated }
           localStorage.setItem('zas_user', JSON.stringify(merged))
-          // Trigger re-render via login helper (token stays the same)
           login({ token: localStorage.getItem('zas_token'), user: merged })
         }
       }
-      // Clear password fields after save
       setForm(f => ({ ...f, password: '', password_confirmation: '' }))
-    } catch {
-      setError('No se pudo conectar con el servidor')
+    } catch (e) {
+      if (e.data?.errors) {
+        const fe = {}
+        Object.entries(e.data.errors).forEach(([k, v]) => { fe[k] = Array.isArray(v) ? v[0] : v })
+        setFieldErrors(fe)
+      } else {
+        setError(e.message)
+      }
     }
     setSaving(false)
   }
