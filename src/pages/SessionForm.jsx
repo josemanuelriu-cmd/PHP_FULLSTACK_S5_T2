@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { createApi } from '../services/api'
 
 // zassessions fields: id, name, event_name, date, start_time, end_time, max_users, direction, latitude, longitude
 
@@ -14,6 +15,7 @@ export default function SessionForm({ mode }) {
   const navigate   = useNavigate()
   const { authHeaders, API, user } = useAuth()
 
+  const api    = createApi(API, authHeaders)
   const isEdit = mode === 'edit'
 
   const [form,        setForm]        = useState(EMPTY)
@@ -29,10 +31,8 @@ export default function SessionForm({ mode }) {
     async function load() {
       setLoading(true)
       try {
-        const res  = await fetch(`${API}/zassessions/${id}`, { headers: authHeaders })
-        if (!res.ok) throw new Error('No se pudo cargar la sesión')
-        const raw  = await res.json()
-        const d    = raw.data || raw
+        const raw = await api.sessions.get(id)
+        const d   = raw.data || raw
         setForm({
           name:       d.name       || '',
           event_name: d.event_name || '',
@@ -77,8 +77,8 @@ export default function SessionForm({ mode }) {
       name:       form.name.trim(),
       event_name: form.event_name.trim() || null,
       date:       form.date,
-      start_time: form.start_time,
-      end_time:   form.end_time,
+      start_time: form.start_time ? `${form.start_time}:00` : null,
+      end_time:   form.end_time   ? `${form.end_time}:00`   : null,
       max_users:  parseInt(form.max_users),
       direction:  form.direction.trim(),
       latitude:   form.latitude  !== '' ? parseFloat(form.latitude)  : null,
@@ -86,22 +86,18 @@ export default function SessionForm({ mode }) {
     }
 
     try {
-      const url    = isEdit ? `${API}/zassessions/${id}` : `${API}/zassessions`
-      const method = isEdit ? 'PUT' : 'POST'
-      const res    = await fetch(url, { method, headers: authHeaders, body: JSON.stringify(payload) })
-      const data   = await res.json()
-
-      if (!res.ok) {
-        if (data.errors) {
-          const fe = {}
-          Object.entries(data.errors).forEach(([k,v]) => { fe[k] = Array.isArray(v)?v[0]:v })
-          setFieldErrors(fe)
-        } else { setError(data.message||'Error al guardar') }
-        setSaving(false); return
-      }
+      const data = isEdit
+        ? await api.sessions.update(id, payload)
+        : await api.sessions.create(payload)
       const savedId = data.data?.id || data.id || id
       navigate(`/sessions/${savedId}`)
-    } catch { setError('No se pudo conectar con el servidor') }
+    } catch (e) {
+      if (e.data?.errors) {
+        const fe = {}
+        Object.entries(e.data.errors).forEach(([k, v]) => { fe[k] = Array.isArray(v) ? v[0] : v })
+        setFieldErrors(fe)
+      } else { setError(e.message) }
+    }
     setSaving(false)
   }
 

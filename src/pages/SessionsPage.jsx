@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { createApi } from '../services/api'
 import { fmtDate, fmtTime, isToday, isPast } from '../utils/helpers'
 
 function SessionCard({ session }) {
@@ -53,6 +54,7 @@ function SessionCard({ session }) {
 
 export default function SessionsPage() {
   const { authHeaders, API, user } = useAuth()
+  const api = createApi(API, authHeaders)
 
   const [sessions,   setSessions]   = useState([])
   const [loading,    setLoading]    = useState(true)
@@ -65,10 +67,7 @@ export default function SessionsPage() {
     async function load() {
       setLoading(true); setError('')
       try {
-        const res  = await fetch(`${API}/zassessions`, { headers: authHeaders })
-        if (!res.ok) throw new Error('No se pudieron cargar las sesiones')
-        const data = await res.json()
-        setSessions(Array.isArray(data) ? data : (data.data || []))
+        setSessions(await api.sessions.list())
       } catch (e) { setError(e.message) }
       setLoading(false)
     }
