@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { createApi } from '../services/api'
 import logoImg from '../assets/logo.png'
 
 function today() {
@@ -8,6 +9,7 @@ function today() {
 
 export default function LoginPage({ onClose }) {
   const { login, API } = useAuth()
+  const api = createApi(API, {})
   const [tab, setTab] = useState('login')
   const [form, setForm] = useState({
     name: '', nickname: '', email: '',
@@ -32,20 +34,11 @@ export default function LoginPage({ onClose }) {
     // ── LOGIN ──
     if (tab === 'login') {
       try {
-        const res  = await fetch(`${API}/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({ email: form.email, password: form.password }),
-        })
-        const data = await res.json()
-        if (!res.ok) {
-          setError(data.errors
-            ? Object.values(data.errors).flat().join(' · ')
-            : (data.message || 'Error al iniciar sesión'))
-          setLoading(false); return
-        }
+        const data = await api.auth.login({ email: form.email, password: form.password })
         login(data); onClose()
-      } catch { setError('No se pudo conectar con el servidor') }
+      } catch (e) {
+        setError(e.message)
+      }
       setLoading(false)
       return
     }
@@ -74,24 +67,11 @@ export default function LoginPage({ onClose }) {
     }
 
     try {
-      const res  = await fetch(`${API}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(body),
-      })
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.errors
-          ? Object.values(data.errors).flat().join(' · ')
-          : (data.message || 'Error al registrarse'))
-        setLoading(false); return
-      }
-
+      await api.auth.register(body)
       setSuccess('¡Cuenta creada! Ahora inicia sesión.')
       switchTab('login')
-    } catch {
-      setError('No se pudo conectar con el servidor')
+    } catch (e) {
+      setError(e.message)
     }
     setLoading(false)
   }
