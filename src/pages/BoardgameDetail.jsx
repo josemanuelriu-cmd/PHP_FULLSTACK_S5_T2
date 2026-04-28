@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-
+import { createApi } from '../services/api'
 import { ownerLabel } from '../utils/helpers'
 
 export default function BoardgameDetail() {
   const { id }       = useParams()
   const navigate     = useNavigate()
   const { authHeaders, API, user } = useAuth()
+  const api = createApi(API, authHeaders)
 
   const [game,       setGame]       = useState(null)
   const [loading,    setLoading]    = useState(true)
@@ -21,19 +22,13 @@ export default function BoardgameDetail() {
     async function load() {
       setLoading(true); setError('')
       try {
-        const res  = await fetch(`${API}/boardgames/${id}`, { headers: authHeaders })
-        if (!res.ok) throw new Error('Juego no encontrado')
-        const data = await res.json()
-        const game = data.data || data
+        const raw  = await api.boardgames.get(id)
+        const game = raw.data || raw
 
-        // If owner not eager-loaded but owner_user_id exists, fetch the user
         if (game.owner_user_id && !game.owner?.nickname && !game.owner?.name) {
           try {
-            const uRes = await fetch(`${API}/users/${game.owner_user_id}`, { headers: authHeaders })
-            if (uRes.ok) {
-              const uData = await uRes.json()
-              game.owner = uData.data || uData
-            }
+            const uRaw = await api.users.get(game.owner_user_id)
+            game.owner = uRaw.data || uRaw
           } catch {}
         }
 
@@ -49,11 +44,7 @@ export default function BoardgameDetail() {
   async function handleDelete() {
     setDeleting(true)
     try {
-      const res = await fetch(`${API}/boardgames/${id}`, {
-        method: 'DELETE',
-        headers: authHeaders,
-      })
-      if (!res.ok) throw new Error('No se pudo eliminar el juego')
+      await api.boardgames.delete(id)
       navigate('/boardgames')
     } catch (e) {
       setError(e.message)
