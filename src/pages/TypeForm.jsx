@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { createApi } from '../services/api'
 
 // The 'type' field is an ENUM in the DB, so on create we let the user pick from the full list.
 // On edit, the enum value is fixed (the DB doesn't allow changing it easily), so we only allow
@@ -18,6 +19,7 @@ export default function TypeForm({ mode }) {
   const navigate   = useNavigate()
   const { authHeaders, API, user } = useAuth()
 
+  const api    = createApi(API, authHeaders)
   const isEdit = mode === 'edit'
 
   const [typeVal,     setTypeVal]     = useState('')
@@ -34,9 +36,7 @@ export default function TypeForm({ mode }) {
       async function loadType() {
         setLoading(true)
         try {
-          const res  = await fetch(`${API}/types/${id}`, { headers: authHeaders })
-          if (!res.ok) throw new Error('No se pudo cargar el tipo')
-          const raw  = await res.json()
+          const raw  = await api.types.get(id)
           const data = raw.data || raw
           setTypeVal(data.type || '')
           setDescription(data.description || '')
@@ -69,27 +69,19 @@ export default function TypeForm({ mode }) {
     }
 
     try {
-      const url    = isEdit ? `${API}/types/${id}` : `${API}/types`
-      const method = isEdit ? 'PUT' : 'POST'
-      const res    = await fetch(url, { method, headers: authHeaders, body: JSON.stringify(payload) })
-      const data   = await res.json()
-
-      if (!res.ok) {
-        if (data.errors) {
-          const fe = {}
-          Object.entries(data.errors).forEach(([k, v]) => { fe[k] = Array.isArray(v) ? v[0] : v })
-          setFieldErrors(fe)
-        } else {
-          setError(data.message || 'Error al guardar')
-        }
-        setSaving(false)
-        return
-      }
-
+      const data = isEdit
+        ? await api.types.update(id, payload)
+        : await api.types.create(payload)
       const savedId = data.data?.id || data.id || id
       navigate(`/types/${savedId}`)
-    } catch {
-      setError('No se pudo conectar con el servidor')
+    } catch (e) {
+      if (e.data?.errors) {
+        const fe = {}
+        Object.entries(e.data.errors).forEach(([k, v]) => { fe[k] = Array.isArray(v) ? v[0] : v })
+        setFieldErrors(fe)
+      } else {
+        setError(e.message)
+      }
     }
     setSaving(false)
   }
