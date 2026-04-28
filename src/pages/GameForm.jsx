@@ -14,13 +14,7 @@ const EMPTY = {
   status: 'open', necesary_know_how: false,
 }
 
-const PALETTE = ['#800020','#6C63FF','#4aab78','#d4963a','#5a9fd4','#9b59b6']
-function avatarColor(str) {
-  let h = 0; for (const c of (str||'')) h=(h*31+c.charCodeAt(0))%PALETTE.length; return PALETTE[h]
-}
-function initials(nick, name) {
-  const s = nick||name||'?'; return s.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)
-}
+import { avatarColor, initials } from '../utils/helpers'
 
 export default function GameForm({ mode }) {
   const { sessionId, id: gameId } = useParams()

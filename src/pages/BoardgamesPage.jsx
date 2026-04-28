@@ -2,25 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-// owner_user_id: NULL or 0 → club ZAS, otherwise → user nickname from owner relation
-
-function ownerLabel(game) {
-  if (!game.owner_user_id || game.owner_user_id === 0) return 'ZAS!'
-  return game.owner?.nickname || game.owner?.name || `Usuario #${game.owner_user_id}`
-}
-
-function extractTypes(game) {
-  // Handle different API response formats for types relation
-  if (Array.isArray(game.types) && game.types.length > 0) {
-    // [{ id, type, description }] — standard eager load
-    return game.types.map(t => t.type || t).filter(Boolean)
-  }
-  if (Array.isArray(game.boardgame_types) && game.boardgame_types.length > 0) {
-    // pivot table objects — map through type relation
-    return game.boardgame_types.map(bt => bt.type?.type || bt.type).filter(Boolean)
-  }
-  return []
-}
+import { ownerLabel, extractTypes } from '../utils/helpers'
 
 function GameCard({ game }) {
   const types = extractTypes(game)

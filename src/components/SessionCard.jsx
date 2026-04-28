@@ -1,22 +1,4 @@
-// Real DB fields: id, name, event_name, date, start_time, end_time, max_users, direction, latitude, longitude
-
-function fmtDate(dateStr) {
-  if (!dateStr) return '—'
-  try {
-    // date is stored as DATE (e.g. "2025-06-14")
-    const [y, m, d] = dateStr.split('-').map(Number)
-    const dt = new Date(y, m - 1, d)
-    return dt.toLocaleDateString('es-ES', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-    })
-  } catch { return dateStr }
-}
-
-function fmtTime(timeStr) {
-  // time stored as TIME (e.g. "18:30:00")
-  if (!timeStr) return ''
-  return timeStr.slice(0, 5) // "18:30"
-}
+import { fmtDate, fmtTime } from '../utils/helpers'
 
 export default function SessionCard({ session, loading, userCount, error }) {
 

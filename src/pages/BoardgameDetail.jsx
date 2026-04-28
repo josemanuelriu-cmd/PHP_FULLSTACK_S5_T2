@@ -2,10 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-function ownerLabel(game) {
-  if (!game.owner_user_id || game.owner_user_id === 0) return 'ZAS!'
-  return game.owner?.nickname || game.owner?.name || `Usuario #${game.owner_user_id}`
-}
+import { ownerLabel } from '../utils/helpers'
 
 export default function BoardgameDetail() {
   const { id }       = useParams()

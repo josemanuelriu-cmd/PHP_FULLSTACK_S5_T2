@@ -8,30 +8,14 @@ import { useToast } from '../hooks/useToast'
 // - No borrarse de sesión si estás en partida activa (open/limited)
 // - No borrarse de partida en estado playing o finished
 
+import { avatarColor, initials, fmtDate, fmtTime, ROLE_LABELS, ROLE_BADGE } from '../utils/helpers'
+
 const STATUS_MAP = {
   open:     { label: 'Abierta',   cls: 'status-open' },
   limited:  { label: 'Limitada',  cls: 'status-limited' },
   playing:  { label: 'Jugando',   cls: 'status-playing' },
   finished: { label: 'Terminada', cls: 'status-finished' },
 }
-const ROLE_BADGE  = { admin:'badge-red', junta:'badge-amber', partner:'badge-green', guest:'badge-blue' }
-const ROLE_LABELS = { admin:'Admin', junta:'Junta', partner:'Socio', guest:'Invitado' }
-const PALETTE     = ['#800020','#6C63FF','#4aab78','#d4963a','#5a9fd4','#9b59b6']
-
-function avatarColor(str) {
-  let h = 0; for (const c of (str||'')) h=(h*31+c.charCodeAt(0))%PALETTE.length; return PALETTE[h]
-}
-function initials(nick, name) {
-  const s = nick||name||'?'; return s.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)
-}
-function fmtDate(d) {
-  if (!d) return '—'
-  try {
-    const [y,m,day]=d.split('-').map(Number)
-    return new Date(y,m-1,day).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
-  } catch { return d }
-}
-function fmtTime(t) { return t ? t.slice(0,5) : '' }
 
 // ── Toast display ─────────────────────────────────────────────────────────────
 function Toast({ msg }) {

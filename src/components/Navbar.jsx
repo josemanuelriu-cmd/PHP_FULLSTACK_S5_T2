@@ -3,13 +3,7 @@ import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import logoImg from '../assets/logo.png'
 
-const ROLE_LABELS = { admin: 'Admin', junta: 'Junta', partner: 'Socio', guest: 'Invitado' }
-const ROLE_BADGE  = { admin: 'badge-red', junta: 'badge-amber', partner: 'badge-green', guest: 'badge-blue' }
-
-function initials(str) {
-  if (!str) return '?'
-  return str.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
-}
+import { initials, ROLE_LABELS, ROLE_BADGE } from '../utils/helpers'
 
 const AUTH_LINKS = [
   { label: 'Inicio',         to: '/' },

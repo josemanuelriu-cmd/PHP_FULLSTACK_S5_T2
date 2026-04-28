@@ -1,38 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-
-// zassessions fields: id, name, event_name, date, start_time, end_time, max_users, direction, latitude, longitude
-
-function fmtDate(d) {
-  if (!d) return '—'
-  try {
-    const [y, m, day] = d.split('-').map(Number)
-    return new Date(y, m - 1, day).toLocaleDateString('es-ES', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-    })
-  } catch { return d }
-}
-
-function fmtTime(t) {
-  return t ? t.slice(0, 5) : ''
-}
-
-function isToday(dateStr) {
-  if (!dateStr) return false
-  const today = new Date()
-  const [y, m, d] = dateStr.split('-').map(Number)
-  return today.getFullYear() === y && today.getMonth() + 1 === m && today.getDate() === d
-}
-
-function isPast(dateStr) {
-  if (!dateStr) return false
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const sessionDate = new Date(y, m - 1, d)
-  return sessionDate < today
-}
+import { fmtDate, fmtTime, isToday, isPast } from '../utils/helpers'
 
 function SessionCard({ session }) {
   const past = isPast(session.date)
