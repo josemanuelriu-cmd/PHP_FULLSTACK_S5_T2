@@ -36,10 +36,10 @@ Frontend de la aplicación web **ZAS! Juegos de mesa y rol**, desarrollado en **
 
 ```bash
 # Clonar o descomprimir el proyecto
-cd zasboard
+cd PHP_FULLSTACK_S5_T2
 
 # Instalar dependencias
-npm install
+npm install --legacy-peer-deps
 ```
 
 ---
