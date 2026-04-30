@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ApiZas — Presentación</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Raleway:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:   #800020;
+      --primary-light: #a0002a;
+      --bg:        #0e0a0b;
+      --surface:   #1a1215;
+      --surface2:  #231820;
+      --surface3:  #2e1f27;
+      --border:    rgba(128,0,32,.25);
+      --text:      #f0e8ea;
+      --text-muted:#c0a8b0;
+      --text-dim:  #8a6870;
+      --radius:    14px;
+      --radius-sm: 8px;
+    }
+
+    @media print {
+      body { background: #fff !important; color: #111 !important; }
+      .page { box-shadow: none !important; background: #fff !important; }
+      .cover { background: #800020 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .section-card { border: 1px solid #ddd !important; background: #fafafa !important; }
+      h1, h2, h3 { color: #800020 !important; }
+      p, li { color: #222 !important; }
+      .toc-item { color: #444 !important; }
+      .tag { background: #f0e0e4 !important; color: #800020 !important; }
+      .watermark { display: none; }
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Raleway', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 1.5rem 4rem;
+    }
+
+    /* ── COVER ── */
+    .cover {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #1a0810 0%, #2e0f1a 40%, #800020 100%);
+      padding: 5rem 3rem 4rem;
+      margin: 0 -1.5rem 3rem;
+      text-align: center;
+    }
+    .cover-logo {
+      width: 88px;
+      height: 88px;
+      margin: 0 auto 1.5rem;
+    }
+    .cover-logo img { width: 88px; height: 88px; object-fit: contain; }
+    .cover h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 3rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: .4rem;
+    }
+    .cover-sub {
+      font-family: 'Cinzel', serif;
+      font-size: .95rem;
+      color: rgba(255,255,255,.6);
+      letter-spacing: .25em;
+      text-transform: uppercase;
+      margin-bottom: 2.5rem;
+    }
+    .cover-meta {
+      display: inline-flex;
+      gap: 1.5rem;
+      background: rgba(0,0,0,.3);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 50px;
+      padding: .6rem 2rem;
+      font-size: .82rem;
+      color: rgba(255,255,255,.7);
+      letter-spacing: .05em;
+    }
+    .cover-meta span::before { content: '·'; margin-right: .75rem; opacity: .4; }
+    .cover-meta span:first-child::before { display: none; }
+
+    /* ── TABLE OF CONTENTS ── */
+    .toc-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem 2.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc-title {
+      font-family: 'Cinzel', serif;
+      font-size: .75rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--primary-light);
+      margin-bottom: 1.25rem;
+    }
+    .toc-list { list-style: none; }
+    .toc-item {
+      display: flex;
+      align-items: baseline;
+      gap: .75rem;
+      padding: .45rem 0;
+      border-bottom: 1px solid rgba(128,0,32,.1);
+      color: var(--text-muted);
+      font-size: .9rem;
+    }
+    .toc-item:last-child { border-bottom: none; }
+    .toc-num {
+      font-family: 'Cinzel', serif;
+      font-size: .75rem;
+      color: var(--primary-light);
+      min-width: 1.5rem;
+      font-weight: 600;
+    }
+    .toc-item a { color: inherit; text-decoration: none; }
+    .toc-item a:hover { color: var(--text); }
+    .toc-dots {
+      flex: 1;
+      border-bottom: 1px dotted rgba(128,0,32,.2);
+      margin-bottom: 2px;
+    }
+    .toc-page { font-size: .78rem; color: var(--text-dim); }
+
+    /* ── SECTION CARDS ── */
+    .section-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .section-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 4px; height: 100%;
+      background: var(--primary);
+      border-radius: 4px 0 0 4px;
+    }
+    .section-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .section-num {
+      font-family: 'Cinzel', serif;
+      font-size: .7rem;
+      letter-spacing: .15em;
+      color: var(--primary-light);
+      background: rgba(128,0,32,.12);
+      border: 1px solid rgba(128,0,32,.25);
+      border-radius: 6px;
+      padding: .3rem .6rem;
+      white-space: nowrap;
+      margin-top: 3px;
+    }
+    .section-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.3;
+    }
+
+    /* ── TYPOGRAPHY ── */
+    p { color: var(--text-muted); margin-bottom: 1rem; }
+    p:last-child { margin-bottom: 0; }
+    strong { color: var(--text); font-weight: 600; }
+
+    .subsection-title {
+      font-family: 'Cinzel', serif;
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--primary-light);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin: 1.75rem 0 .75rem;
+    }
+
+    /* ── AI COMPARISON CARDS ── */
+    .ai-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.25rem 0;
+    }
+    @media (max-width: 600px) { .ai-grid { grid-template-columns: 1fr; } }
+
+    .ai-card {
+      background: var(--surface2);
+      border: 1px solid rgba(128,0,32,.15);
+      border-radius: var(--radius-sm);
+      padding: 1.25rem;
+    }
+    .ai-card.winner {
+      border-color: rgba(128,0,32,.5);
+      background: rgba(128,0,32,.08);
+    }
+    .ai-name {
+      font-family: 'Cinzel', serif;
+      font-size: .9rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: .75rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .ai-card.winner .ai-name { color: #f0a0a8; }
+    .badge-winner {
+      font-size: .62rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 4px;
+      padding: .15rem .4rem;
+    }
+    .pro-con { margin-bottom: .5rem; }
+    .pro-con-label {
+      font-size: .72rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: .3rem;
+    }
+    .pro-con-label.pro { color: #4ade80; }
+    .pro-con-label.con { color: #f87171; }
+    .pro-con p { font-size: .82rem; color: var(--text-muted); margin: 0 0 .2rem; }
+    .pro-con p::before { margin-right: .35rem; }
+    .pro-con.pro p::before { content: '+'; color: #4ade80; }
+    .pro-con.con p::before { content: '−'; color: #f87171; }
+
+    /* ── PROMPT BLOCK ── */
+    .prompt-block {
+      background: var(--surface3);
+      border: 1px solid rgba(128,0,32,.2);
+      border-left: 3px solid var(--primary);
+      border-radius: var(--radius-sm);
+      padding: 1.25rem 1.5rem;
+      margin: 1rem 0;
+      font-size: .88rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+    .prompt-label {
+      font-family: 'Cinzel', serif;
+      font-size: .65rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--primary-light);
+      margin-bottom: .5rem;
+      font-style: normal;
+    }
+
+    /* ── LINK ── */
+    .doc-link {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      color: var(--primary-light);
+      font-size: .85rem;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(128,0,32,.3);
+      padding-bottom: 1px;
+      transition: color .15s, border-color .15s;
+    }
+    .doc-link:hover { color: #ff6080; border-color: #ff6080; }
+
+    /* ── TAGS ── */
+    .tag {
+      display: inline-block;
+      font-size: .72rem;
+      letter-spacing: .06em;
+      background: rgba(128,0,32,.15);
+      border: 1px solid rgba(128,0,32,.3);
+      color: var(--primary-light);
+      border-radius: 4px;
+      padding: .2rem .55rem;
+      margin: .15rem .1rem;
+    }
+
+    /* ── CONCLUSION BOX ── */
+    .conclusion-box {
+      background: rgba(128,0,32,.1);
+      border: 1px solid rgba(128,0,32,.35);
+      border-radius: var(--radius-sm);
+      padding: 1.25rem 1.5rem;
+      margin-top: 1.25rem;
+    }
+    .conclusion-box p { color: var(--text); }
+
+    /* ── DIVIDER ── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.5rem 0;
+    }
+
+    /* ── PENDING NOTE ── */
+    .pending-note {
+      display: flex;
+      align-items: flex-start;
+      gap: .75rem;
+      background: rgba(251,191,36,.06);
+      border: 1px solid rgba(251,191,36,.2);
+      border-radius: var(--radius-sm);
+      padding: 1rem 1.25rem;
+      font-size: .85rem;
+      color: #fbbf24;
+      margin-top: 1rem;
+    }
+    .pending-note-icon { font-size: 1rem; margin-top: .1rem; flex-shrink: 0; }
+    .pending-note p { color: #fbbf24; margin: 0; font-style: italic; }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      padding: 2rem 0 1rem;
+      font-size: .78rem;
+      color: var(--text-dim);
+      letter-spacing: .05em;
+    }
+    .footer strong { color: var(--text-muted); }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- COVER -->
+  <div class="cover">
+    <div class="cover-logo">
+      <img src="../src/assets/logo.png" alt="Logo ZasBoard" />
+    </div>
+    <h1>ApiZas</h1>
+    <p class="cover-sub">Juegos de Mesa i Rol</p>
+    <div class="cover-meta">
+      <span>Frontend React + Vite</span>
+      <span>API REST Laravel</span>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc-card">
+    <p class="toc-title">Contenido</p>
+    <ul class="toc-list">
+      <li class="toc-item">
+        <span class="toc-num">01</span>
+        <a href="#s1">Descripción del modelo IA seleccionado y el motivo de su elección</a>
+      </li>
+      <li class="toc-item">
+        <span class="toc-num">02</span>
+        <a href="#s2">Registro de las interacciones con la IA</a>
+      </li>
+      <li class="toc-item">
+        <span class="toc-num">03</span>
+        <a href="#s3">Análisis del código generado por la IA</a>
+      </li>
+      <li class="toc-item">
+        <span class="toc-num">04</span>
+        <a href="#s4">Descripción del proceso de conexión entre el frontend y el backend</a>
+      </li>
+      <li class="toc-item">
+        <span class="toc-num">05</span>
+        <a href="#s5">Reflexión sobre el proceso de aprendizaje</a>
+      </li>
+      <li class="toc-item">
+        <span class="toc-num">06</span>
+        <a href="#s6">Código en el repositorio de GitHub</a>
+      </li>
+    </ul>
+  </div>
+
+  <!-- SECTION 1 -->
+  <div class="section-card" id="s1">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <h2 class="section-title">Descripción del modelo IA seleccionado y el motivo de su elección</h2>
+    </div>
+
+    <p>El modelo de IA seleccionado ha sido <strong>Claude</strong>. El motivo ha sido porque hice una prueba con 4 IAs diferentes para ver cuál me devolvía una respuesta que me gustara más. Concretamente probé las IAs (ChatGPT, Gemini, Claude, Deepseek), a las que les pasé el siguiente prompt:</p>
+
+    <div class="prompt-block">
+      <p class="prompt-label">Prompt inicial</p>
+      Necesito que me ayudes a crear un front end para una aplicación web con back end en php. La web consiste en un club de juegos de mesa, donde hay usuarios (users), con 4 tipos diferentes (admin, junta, partner y guest), juegos de mesa (boardgames), tipos (types), sesiones (zassessions) y partidas (games). La primera vista debería mostrar una pequeña presentación del club, los datos de la próxima sesión, la gente que haya apuntado a ir a esa sesión (una lista de hasta 15 personas), y las partidas creadas para esa sesión. También debería tener un link a una página que conecte con el end point para hacer el login/create. Me gustaría que esté escrito en React y con tailwind.
+    </div>
+
+    <p class="subsection-title">Valoración respuesta inicial</p>
+
+    <div class="ai-grid">
+      <div class="ai-card">
+        <div class="ai-name">ChatGPT</div>
+        <div class="pro-con pro">
+          <p class="pro-con-label pro">Puntos a favor</p>
+          <p>La más conocida por mí.</p>
+          <p>Sé cuándo se acaban los tokens y cuándo vuelve al 100%.</p>
+          <p>Muestra el resultado visualmente.</p>
+        </div>
+        <div class="pro-con con">
+          <p class="pro-con-label con">Puntos en contra</p>
+          <p>El código parece técnicamente inferior a Claude.</p>
+          <p>Estética muy básica.</p>
+        </div>
+        <div style="margin-top:.75rem">
+          <a href="https://chatgpt.com/share/69dcc4f0-d944-8331-8118-8f70f79612a5" class="doc-link" target="_blank">Ver conversación →</a>
+        </div>
+      </div>
+
+      <div class="ai-card">
+        <div class="ai-name">Gemini</div>
+        <div class="pro-con pro">
+          <p class="pro-con-label pro">Puntos a favor</p>
+          <p>Indica la instalación necesaria sin darla por hecha.</p>
+          <p>Técnicamente en un punto intermedio.</p>
+        </div>
+        <div class="pro-con con">
+          <p class="pro-con-label con">Puntos en contra</p>
+          <p>No me gusta el entorno.</p>
+          <p>No muestra la pantalla inicial creada.</p>
+          <p>Desconocimiento sobre límite de tokens.</p>
+        </div>
+        <div style="margin-top:.75rem">
+          <a href="https://gemini.google.com/share/0e64d3fc6058" class="doc-link" target="_blank">Ver conversación →</a>
+        </div>
+      </div>
+
+      <div class="ai-card winner">
+        <div class="ai-name">Claude <span class="badge-winner">Elegido</span></div>
+        <div class="pro-con pro">
+          <p class="pro-con-label pro">Puntos a favor</p>
+          <p>Calidad técnica superior al resto.</p>
+          <p>Facilidad de uso y en castellano.</p>
+          <p>Muestra el resultado visualmente antes del código.</p>
+          <p>Con comentarios y ejemplos dentro del código.</p>
+        </div>
+        <div class="pro-con con">
+          <p class="pro-con-label con">Puntos en contra</p>
+          <p>Desconocimiento sobre límite y gestión de tokens.</p>
+        </div>
+        <div style="margin-top:.75rem">
+          <a href="https://claude.ai/share/5057eba7-f118-4afe-9d09-f1480841f624" class="doc-link" target="_blank">Ver conversación →</a>
+        </div>
+      </div>
+
+      <div class="ai-card">
+        <div class="ai-name">Deepseek</div>
+        <div class="pro-con pro">
+          <p class="pro-con-label pro">Puntos a favor</p>
+          <p>Facilidad de uso.</p>
+          <p>Muy bien estructurado y separado.</p>
+        </div>
+        <div class="pro-con con">
+          <p class="pro-con-label con">Puntos en contra</p>
+          <p>Sin imagen visual del resultado.</p>
+          <p>Desconocimiento sobre límite de tokens.</p>
+        </div>
+        <div style="margin-top:.75rem">
+          <a href="https://chat.deepseek.com/share/j9o4986fisqxeozkti" class="doc-link" target="_blank">Ver conversación →</a>
+        </div>
+      </div>
+    </div>
+
+    <p class="subsection-title">Conclusión</p>
+    <div class="conclusion-box">
+      <p>Ante esta prueba inicial, me decido por <strong>Claude</strong>. El porqué es por la facilidad de uso, pero sobre todo por la calidad del resultado inicial (destaca mucho visualmente). Y eso que no sé cuánto la podré utilizar hasta que me consuma los tokens, ni qué pasará cuando los consuma.</p>
+      <p style="margin-top:.75rem">Tengo claro que los prompts que voy a tener que pasar van a tener que ser bastante más elaborados que el utilizado para la prueba o se inventará muchas cosas.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 2 -->
+  <div class="section-card" id="s2">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <h2 class="section-title">Registro de las interacciones con la IA</h2>
+    </div>
+
+    <p>Toda la interacción con la IA la he ido guardando en un documento Word. Pongo el link al documento: <a href="Promt con Claude.docx" class="doc-link">Interacción</a></p>
+
+    <p>Sí que tengo que comentar que al respecto, una vez acabado el proyecto, que la elección de Claude tuvo un gran inconveniente. No podía hacer más de 1 o 2 prompts antes de que me bloqueara la interacción durante unas horas. En ese escenario, tenía la opción de tirar para atrás y escoger otra IA, o pagar la versión mínima de la IA y ver si así era viable continuar. Opté por esta segunda opción, ya que a pesar de todo, me estaba gustando mucho lo que me estaba generando.</p>
+
+    <p>Una vez pagado, he podido usar la IA sin llegar aninguna limitación.</p>
+    
+  </div>
+
+  <!-- SECTION 3 -->
+  <div class="section-card" id="s3">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <h2 class="section-title">Análisis del código generado por la IA</h2>
+    </div>
+
+    <p>Me ha sorprendido gratamente el código que me ha ido generando, ya que no sabía hasta qué punto era capaz de crear un proyecto mínimamente complejo acordándose del contexto de los prompts anteriores. Pocas veces le he tenido que recordar nada, aunque, eso sí, una vez antes de pagar, me indicó que me lo había hecho, pero no me llegó a pasar el fichero y, al solicitárselo, me dijo que ya había consumido las interacciones hasta dentro de X horas…</p>
+    
+    <p>Claude a seguido los pasos que le indicaba, pero si tenia que tomar una decisión en un punto que no le había indicado, no preguntaba, sino que simplemente tomaba el camino que consideraba correcto y seguia como si nada. Esto me ha generado mucha incomodidad, ya que tenia que ser muy cuidadoso con los prompts que escribia para tener la sensación de tener yo el control, y no hacer vibe coding.</p>
+    
+    <p>En cuanto al código en sí, me lo tendria que haber mirado mas lo que escribia, y no centrarme en el aspecto visual y funcional. También es verdad que no conocia react, y por lo tanto, prepender corregir a la IA en un lenguaje que no dominaba, se me hacia difícil.</p>
+    
+    
+  </div>
+
+  <!-- SECTION 4 -->
+  <div class="section-card" id="s4">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <h2 class="section-title">Descripción del proceso de conexión entre el frontend y el backend</h2>
+    </div>
+
+    <p>Pues la verdad es que la conexión entre el frontend y el backend (en local), que creía que me iba a dar trabajo, ha sido bastante sencilla. Con el prompt inicial donde ya le indicaba que el frontal a hacer tenía que conectar con una API, y añadir manualmente el authcontext.jsx antes del segundo prompt, ya he podido hacer el frontal todo el tiempo conectando con la API.</p>
+
+    <p>Sí que es verdad que lo fácil ha sido hacerlo en local. Una vez todo hecho, rehíce la API y además la desplegué en Railway. Conseguir que el frontal funcionara con la API online ha sido todo un desafío, teniendo que instalar Claude en VS Code para que cogiera el contexto de ambos proyectos, explicándole cómo está configurado Railway y pidiéndole que analizara el porqué sí que hacía login, pero luego no mostraba ningún dato.</p>
+    <p>Al final, tras mucho tiempo investigando y probando, el problema estaba en incompatibilidad de las claves publicas y privadas. -una se habia actualizado bien pero la otra no.</p>
+
+    
+  </div>
+
+  <!-- SECTION 5 -->
+  <div class="section-card" id="s5">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <h2 class="section-title">Reflexión sobre el proceso de aprendizaje</h2>
+    </div>
+
+    <p>He descubierto que la IA es ya una herramienta muy útil para ayudar a los programadores a desarrollar aplicaciones, agilizando mucho el proceso de escritura de código. Cada vez es más precisa, por lo que haciendo un buen prompt (cosa que necesitas saber que estás haciendo), te crea código muy decente.</p>
+
+    <p>Esto también es un problema, ya que da la sensación de que sin saber programar, puedes hacer programas funcionales y esto va a generar mucho <em>vibe coding</em> de gente que no tiene ni idea de lo que está haciendo la IA.</p>
+    
+    <p class="conclusion-box">A dia de hoy aun es muy peligroso darle el control total a la IA. Hay que tener un conocimiento profundo del lenguaje de programación, para guiarla por el camino correcto, pero dentro de pocos años, con la evolución de la IA, esto cambiará...</p>
+    
+  </div>
+
+  <!-- SECTION 6 -->
+  <div class="section-card" id="s6">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <h2 class="section-title">Código en el repositorio de GitHub</h2>
+    </div>
+
+    <p>El repositorio del frontal está en:</p>
+    <a href="https://github.com/josemanuelriu-cmd/PHP_FULLSTACK_S5_T2" class="doc-link" target="_blank">
+      github.com/josemanuelriu-cmd/PHP_FULLSTACK_S5_T2 →
+    </a>
+  </div>
+
+  <div class="footer">
+    <strong>Zas</strong> · Juegos de Mesa i rol
+  </div>
+
+</div>
+</body>
+</html>
