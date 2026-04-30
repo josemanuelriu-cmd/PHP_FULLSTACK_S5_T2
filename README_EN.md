@@ -37,10 +37,11 @@ Frontend for the **ZAS! Board Games and Roleplay** web application, built with *
 
 ```bash
 # Unzip or clone the project
-cd zasboard
+cd PHP_FULLSTACK_S5_T2
 
 # Install dependencies
-npm install
+npm install --legacy-peer-deps
+
 ```
 
 ---
